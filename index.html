@@ -280,11 +280,118 @@ print_links "$1" | \
 						</script>
 					</section>
 				</section>
-				<section data-markdown>
-					<script type="text/template">
-					## Writing Emender Tests
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+						## Writing a Test
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## Getting Started
+
+						* Tests are written in Lua <!-- .element: class="fragment" data-fragment-index="1" -->
+						* Tests are implemented as Lua classes <!-- .element: class="fragment" data-fragment-index="2" -->
+						* Tests are typically stored in the "test" directory <!-- .element: class="fragment" data-fragment-index="3" -->
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## A Typical Test Consists Of
+
+						* A class definition <!-- .element: class="fragment" data-fragment-index="1" -->
+							* Metadata (description, authors, tags) <!--.element: class="fragment" data-fragment-index="2" -->
+							* List of dependencies <!--.element: class="fragment" data-fragment-index="3" -->
+						* A setup method <!-- .element: class="fragment" data-fragment-index="4" -->
+						* A clean-up method <!-- .element: class="fragment" data-fragment-index="5" -->
+						* One or more test methods <!-- .element: class="fragment" data-fragment-index="6" -->
+						* Any other methods <!-- .element: class="fragment" data-fragment-index="7" -->
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## A Class Definition
+
+						```
+						TestLinks = {
+						  metadata = {
+						    description = "Verify that external links work.",
+						    authors = "Jaromir Hradilek",
+						    emails = "jhradilek@gmail.com",
+						    changed = "2015-11-07",
+						    tags = {"DocBook", "Sanity"},
+						  },
+						  requires = {"curl", "xmllint"}
+						}
+						```
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## A Setup Method
+
+						```
+						function TestLinks.setUp()
+							local file = "en-US/Managing_Services_with_systemd.xml"
+							local command = "xmlstarlet sel -t -v '//ulink/@url' 2>/dev/null " ..
+							                file .. " | sort -u | sed '/^$/d'"
+
+							TestLinks.links = execCaptureOutputAsTable(command)
+						end
+						```
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## A Clean-Up Method
+
+						```
+						function TestLinks.tearDown()
+						  -- Nothing to do here
+						end
+						```
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## A Test Method
+
+						```
+						function TestLinks.testExternalLinks()
+						  for _, link in ipairs(TestLinks.links) do
+						    is_true(TestLinks.isWorking(link), link)
+						  end
+						end
+						```
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## Other Methods
+
+						```
+						function TestLinks.isWorking(link)
+						  local command = "curl --connect-timeout 5 --retry 3 " ..
+						                  "-4ILfks " .. link .. " &>/dev/null;" ..
+						                  "echo $?"
+						  local result = execCaptureOutputAsString(command)
 						
-					</script>
+						  if result == "0" then
+						    return true
+						  else
+						    return false
+						  end
+						end
+						```
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## Example Output
+
+						![Test Results](images/TestLinks.png)
+						</script>
+					</section>
 				</section>
 				<section>
 					<section data-markdown>
@@ -315,7 +422,7 @@ print_links "$1" | \
 				</section>
 				<section data-markdown>
 					<script type="text/template">
-					## Lessons Learned
+					## What Did We Learn?
 					</script>
 				</section>
 				<section>
