@@ -51,10 +51,151 @@
 					</script>
 				</section>
 
-				<section data-markdown>
-					<script type="text/template">
-					## Why Are We Doing This?
-					</script>
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+						## Test Automation
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## Why Test Documentation
+
+						* Saves a lot of time <!-- .element: class="fragment" data-fragment-index="1" -->
+						* Ensures better accuracy <!-- .element: class="fragment" data-fragment-index="2" -->
+						* Prevents regression <!-- .element: class="fragment" data-fragment-index="3" -->
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## What Can Be Tested
+
+						* Broken links <!-- .element: class="fragment" data-fragment-index="1" -->
+						* Invalid packages <!-- .element: class="fragment" data-fragment-index="2" -->
+						* Missing manual pages <!-- .element: class="fragment" data-fragment-index="3" -->
+						* Completeness <!-- .element: class="fragment" data-fragment-index="4" -->
+						* Release readiness <!-- .element: class="fragment" data-fragment-index="5" -->
+						* Style guide violations <!-- .element: class="fragment" data-fragment-index="6" -->
+						* &hellip; <!-- .element: class="fragment" data-fragment-index="7" -->
+						</script>
+					</section>
+					<section>
+						<h2>Example Implementation</h2>
+						<pre><code data-trim>
+#!/bin/bash
+
+for link in `sed -ne 's/.*ulink url="\([^"]\+".*/\1/p' "$1"`; do
+  curl -4ILfks "$link"
+done
+						</code></pre>
+						<pre class="fragment" data-fragment-index="1"><code data-trim>
+$ ./testLinks.sh Managing_Services_with_systemd.xml
+sed: -e expression #1, char 32: Unmatched ( or \(
+						</code></pre>
+					</section>
+					<section>
+						<h2>2 Minutes Later</h2>
+						<pre><code data-trim>
+#!/bin/bash
+
+for link in `sed -ne 's/.*ulink url="\([^"]\+\)".*/\1/p' "$1"`; do
+  curl -4ILfks "$link"
+done
+						</code></pre>
+						<pre class="fragment" data-fragment-index="1"><code data-trim>
+$ ./testLinks.sh Managing_Services_with_systemd.xml
+HTTP/1.1 200 OK
+Server: Apache
+Last-Modified: Tue, 01 Sep 2015 07:53:09 GMT
+ETag: "70b4f4-1a550-51eaad74d6340"
+X-Cnection: close
+Content-Type: text/html; charset=UTF-8
+Date: Sun, 08 Nov 2015 02:52:44 GMT
+Connection: keep-alive
+						</code></pre>
+					</section>
+					<section>
+						<h2>5 Minutes Later</h2>
+						<pre><code data-trim>
+#!/bin/bash
+
+for link in `sed -ne 's/.*ulink url="\([^"]\+\)".*/\1/p' "$1"`; do
+  echo -n "$link  "
+  curl -4ILfks "$link" &amp;&amp;gt;/dev/null \
+    &amp;&amp; echo '[ OK ]' \
+    || echo '[ FAIL ]'
+done
+						</code></pre>
+						<pre class="fragment" data-fragment-index="1"><code data-trim>
+$ ./testLinks.sh Managing_Services_with_systemd.xml
+https://access.redhat.com/  [ OK ]
+https://acces.redhat.com/ [ FAIL ]
+https://access.redhat.com/  [ OK ]
+https://access.redhat.com/  [ OK ]
+https://docs.fedoraproject.org/  [ OK ]
+						</code></pre>
+					</section>
+					<section>
+						<h2>10 Minutes Later</h2>
+						<pre><code data-trim>
+#!/bin/bash
+
+for link in `xmlstarlet sel -t -v '//ulink/@url' 2&gt;/dev/null "$1"`; do
+  echo -n "$link  "
+  curl -4ILfks "$link" &amp;&amp;gt;/dev/null \
+    &amp;&amp; echo '[ OK ]' \
+    || echo '[ FAIL ]'
+done
+						</code></pre>
+						<pre class="fragment" data-fragment-index="1"><code data-trim>
+$ ./testLinks.sh Managing_Services_with_systemd.xml
+https://access.redhat.com/  [ OK ]
+https://acces.redhat.com/ [ FAIL ]
+https://access.redhat.com/  [ OK ]
+https://access.redhat.com/  [ OK ]
+						</code></pre>
+					</section>
+					<section>
+						<h2>15 Minutes Later</h2>
+						<pre><code data-trim>
+#!/bin/bash
+
+function print_links {
+  xmlstarlet sel -t -v '//ulink/@url' 2&gt;/dev/null "$1" | \
+  sort -u | sed '/^$/d'
+}
+
+function check_link {
+  curl --connect-timeout 5 --retry 3 \
+       -4ILfks "$1" &amp;&gt;/dev/null
+}
+
+function print_status {
+  if check_link "$1"; then
+    echo "[ PASS ]  $1"
+  else
+    echo "[ FAIL ]  $1"
+  fi
+}
+
+export -f print_status check_link
+print_links "$1" | \
+  xargs -n 1 -P 0 bash -c 'print_status "$@"' --
+						</code></pre>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## Few Hours Later...
+
+						![Script output](images/check-links.png)
+
+						```
+						$ wc -l check-links
+						387 check-links
+						```
+						<!-- .element: class="fragment" data-fragment-index="1" -->
+						</script>
+					</section>
 				</section>
 				<section>
 					<section data-markdown>
